@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken');
-
+require('dotenv').config();
 function generateToken(user) {
-  return jwt.sign(user, 'Sufiy@n395.', { expiresIn: '1h' });
+  return jwt.sign(user, process.env.SECRATE_KEY, { expiresIn: '1h' });
 }
 
 function verifyToken(token) {
   return new Promise((resolve, reject) => {
-    jwt.verify(token, 'Sufiy@n395.', (err, decoded) => {
+    jwt.verify(token, process.env.SECRATE_KEY, (err, decoded) => {
       if (err) {
         reject(err);
       } else {

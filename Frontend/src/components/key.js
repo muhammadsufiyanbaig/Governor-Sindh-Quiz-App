@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-
 const Guidelines = () => {
   return (
     <div className="mb-4">
@@ -9,15 +9,19 @@ const Guidelines = () => {
       <ul className="list-disc pl-5">
         <li>Time: 45 minutes</li>
         <li>In some questions, you can choose 1 or more answers.</li>
-        <li>You can't minimize your full screen. If you do, your quiz will end.</li>
+        <li>
+          You can't minimize your full screen. If you do, your quiz will end.
+        </li>
       </ul>
     </div>
   );
 };
 
 const Key = () => {
+  const [show, setShow] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(true);
   const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleClosePopup = () => {
@@ -29,15 +33,31 @@ const Key = () => {
     setInputValue(e.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsPopupOpen(false);
-    document.documentElement.requestFullscreen().catch((e) => {
-      console.log(e);
-    });
-    navigate("/quiz");
-  };
+    setError(null);
 
+    try {
+      const response = await axios.post("http://localhost:5001/testkey", {
+        key: inputValue,
+      });
+      if (response.data.success) {
+        setIsPopupOpen(false);
+        document.documentElement.requestFullscreen().catch((e) => {
+          console.log(e);
+        });
+        navigate("/quiz");
+      } else {
+        setError("Wrong Key");
+      }
+    } catch (error) {
+      setError("An error occurred while validating the key. Please try again.");
+      console.error(error);
+    }
+  };
+  const togglePasswordVisibility = () => {
+    setShow(!show);
+  };
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       {isPopupOpen && (
@@ -46,13 +66,29 @@ const Key = () => {
             <Guidelines />
             <h2 className="text-lg font-bold mb-4">Enter Test Key:</h2>
             <form onSubmit={handleSubmit}>
-              <input
-                type="password"
-                value={inputValue}
-                onChange={handleInputChange}
-                className="w-full p-2 mb-4 border rounded"
-                placeholder="Enter your test key here..."
-              />
+              <div className="my-5 relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={show ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="block w-full px-3 border-2 border-gray-500 py-1.5 text-gray-900 sm:text-sm"
+                  value={inputValue}
+                  onChange={handleInputChange}
+                />
+                <button
+                  type="button"
+                  className="absolute right-0 top-0 mt-3 mr-3"
+                  onClick={togglePasswordVisibility}
+                >
+                  {!show ? (
+                    <FiEyeOff className="text-green-500" />
+                  ) : (
+                    <FiEye className="text-green-500" />
+                  )}
+                </button>
+              </div>
+              {error && <p className="text-red-500 mb-4">{error}</p>}
               <div className="flex justify-end">
                 <button
                   type="button"

@@ -7,12 +7,12 @@ const Quiz = () => {
   const navigate = useNavigate();
   const [quizData, setQuizData] = useState([]);
   const [currQuesNo, setCurrQuesNo] = useState(0);
-  const [score, setScore] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [quizEnded, setQuizEnded] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
- // eslint-disable-next-line
-  const [startingTime, setStartingTime] = useState(null);
+  const [userResponses, setUserResponses] = useState([]);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [score, setScore] = useState();
 
   useEffect(() => {
     fetchQuizData();
@@ -21,14 +21,14 @@ const Quiz = () => {
 
   const fetchQuizData = async () => {
     try {
+
       const response = await axios.get("http://localhost:5001/quiz", {
         withCredentials: true,
       });
       const data = response.data.questions;
-      const startTime = new Date(response.data.timestamp).getTime();
       setQuizData(data);
-      setStartingTime(startTime);
 
+      const startTime = new Date(response.data.timestamp).getTime();
       startTimer(startTime);
     } catch (error) {
       console.error("Error fetching quiz data:", error);
@@ -52,7 +52,7 @@ const Quiz = () => {
     }, 1000);
   };
 
-  const nextQuestion = async () => {
+  const nextQuestion = () => {
     setErrorMessage("");
     const userAns = Array.from(
       document.querySelectorAll("input[name=option]:checked")
@@ -63,31 +63,22 @@ const Quiz = () => {
       return;
     }
 
-    try {
-      const response = await axios.post("http://localhost:5001/quiz", {
-        questionId: quizData[currQuesNo].id,
-        answers: userAns,
-      });
+    setUserResponses((prevResponses) => [
+      ...prevResponses,
+      { questionId: quizData[currQuesNo].id, userAnswer: userAns },
+    ]);
 
-      setScore(response.data.score);
+    const inputFields = document.querySelectorAll(
+      "input[name=option]:checked"
+    );
+    inputFields.forEach((inputField) => {
+      inputField.checked = false;
+    });
 
-      
-      const inputFields = document.querySelectorAll(
-        "input[name=option]:checked"
-      );
-      inputFields.forEach((inputField) => {
-        inputField.checked = false;
-      });
-      
-      localStorage.setItem(`answers_${currQuesNo}`, JSON.stringify(userAns));
-
-      if (currQuesNo < quizData.length - 1) {
-        setCurrQuesNo(currQuesNo + 1);
-      } else {
-        setQuizEnded(true);
-      }
-    } catch (error) {
-      console.error("Error submitting answers:", error);
+    if (currQuesNo < quizData.length - 1) {
+      setCurrQuesNo(currQuesNo + 1);
+    } else {
+      setQuizCompleted(true);
     }
   };
 
@@ -95,6 +86,12 @@ const Quiz = () => {
     if (currQuesNo > 0) {
       setCurrQuesNo((prev) => prev - 1);
     }
+  };
+
+  const endQuiz = () => {
+    navigate("/login");
+    document.cookie.replace("token", "");
+    localStorage.clear();
   };
 
   useEffect(() => {
@@ -110,12 +107,31 @@ const Quiz = () => {
     }
   }, [currQuesNo]);
 
-  const reloadPage = () => {
-    navigate("/login");
-    document.cookie.replace("token", "");
-    localStorage.clear()
-  };
+  useEffect(() => {
+    if (quizCompleted) {
+      submitAllAnswers();
+    }
+    // eslint-disable-next-line
+  }, [quizCompleted]);
 
+  const submitAllAnswers = async () => {
+    const user =  localStorage.getItem('userId');
+    try {
+      const response = await axios.post("http://localhost:5001/quiz", {
+        userResponses,
+        user
+      });
+      if (response.data.success) {
+        setQuizEnded(true);
+        setScore(response.data.score);
+      } else {
+        console.error("Error submitting all answers:", response.data.error);
+      }
+    } catch (error) {
+      console.error("Error submitting all answers:", error);
+    }
+  };
+  
   const formatTime = (ms) => {
     let minutes = Math.floor(ms / (1000 * 60));
     let seconds = Math.floor((ms % (1000 * 60)) / 1000);
@@ -124,16 +140,43 @@ const Quiz = () => {
     return `${minutes}:${seconds}`;
   };
 
-  const checkFullscreen = () => {
-    const fullscreenElement =
+  const getFullScreenElement = () => {
+    return (
       document.fullscreenElement ||
       document.webkitFullscreenElement ||
       document.mozFullscreenElement ||
-      document.msFullscreenElement;
-    if (!fullscreenElement) {
+      document.msFullscreenElement
+    );
+  };
+
+  const checkFullscreen = () => {
+    if (!getFullScreenElement()) {
+      navigate('/testkey');
+    }
+  };
+  const handleKeyDown = (event) => {
+    const { key, shiftKey, ctrlKey, altKey, metaKey } = event;
+
+    if (
+      key === "Escape" ||
+      shiftKey ||
+      ctrlKey ||
+      altKey ||
+      metaKey ||
+      key === "Esc"
+    ) {
       navigate("/testkey");
     }
   };
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+    // eslint-disable-next-line
+  }, []);
 
   useEffect(() => {
     document.addEventListener("fullscreenchange", checkFullscreen);
@@ -147,8 +190,8 @@ const Quiz = () => {
       document.removeEventListener("mozfullscreenchange", checkFullscreen);
       document.removeEventListener("msfullscreenchange", checkFullscreen);
     };
-  });
-
+     // eslint-disable-next-line
+  }, []);
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar />
@@ -157,7 +200,7 @@ const Quiz = () => {
           {formatTime(remainingTime)}
         </p>
       </div>
-      <div className="flex justify-center items-center pt-16 lg:pt-28 ">
+      <div className="flex justify-center items-center pt-16 lg:pt-28">
         {!quizEnded && (
           <div className="bg-white px-3 py-4 w-full md:w-1/2 lg:w-1/3 shadow-lg rounded-lg">
             <h1 className="text-green-500 text-center font-bold text-3xl mb-6">
@@ -219,14 +262,13 @@ const Quiz = () => {
         )}
         {quizEnded && (
           <div className="bg-white items-center px-3 py-4 w-full md:w-1/2 lg:w-1/3 shadow-lg rounded-lg">
-
             <h1 className="text-center text-xl font-bold text-green-500">
               Your Score: {score}/{quizData.length}
             </h1>
             <div className="flex justify-center">
               <button
                 className="bg-green-500 mt-10 font-bold text-white px-4 text-left py-2 rounded"
-                onClick={reloadPage}
+                onClick={endQuiz}
               >
                 Log Out
               </button>
@@ -239,3 +281,4 @@ const Quiz = () => {
 };
 
 export default Quiz;
+

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from '../AuthContext';
 
 const Login = () => {
   const [show, setShow] = useState(false);
@@ -11,6 +12,8 @@ const Login = () => {
     password: "",
   });
   const navigate = useNavigate();
+  const { login } = useAuth();
+
   const togglePasswordVisibility = () => {
     setShow(!show);
   };
@@ -36,12 +39,12 @@ const Login = () => {
         }
       );
       // console.log("Login success:", response.data);
-      localStorage.setItem('userId', response.data.id);
+      login(response.data.id);
+      navigate("/testkey");
     } catch (error) {
       console.error("Login error:", error.response.data);
       setError(error.response.data.message);
     }
-    navigate("/testkey");
   };
 
   return (

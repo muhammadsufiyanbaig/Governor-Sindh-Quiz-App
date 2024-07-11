@@ -1,21 +1,37 @@
-import React from "react";
-import Quiz from "./components/Quiz";
-import { Routes, Route } from "react-router-dom";
-import Login from "./components/Login";
-import SignUp from "./components/Signup";
-import Key from "./components/key";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Quiz from './components/Quiz';
+import Login from './components/Login';
+import SignUp from './components/Signup';
+import Key from './components/key';
+import ProtectedRoute from './ProtectedRoute';
+import { AuthProvider } from './AuthContext';
 
 const App = () => {
   return (
-    <div>
+    <AuthProvider>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="login" element={<Login />} />
-        <Route path="testkey" element={<Key />} />
         <Route path="signup" element={<SignUp />} />
-        <Route path="quiz" element={<Quiz />} />
+        <Route
+          path="testkey"
+          element={
+            <ProtectedRoute>
+              <Key />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="quiz"
+          element={
+            <ProtectedRoute>
+              <Quiz />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
-    </div>
+    </AuthProvider>
   );
 };
 

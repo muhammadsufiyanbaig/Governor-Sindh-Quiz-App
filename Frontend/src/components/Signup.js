@@ -3,12 +3,14 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
+
 const SignUp = () => {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [show, setShow] = useState(false);
   const [show1, setShow1] = useState(false);
   const [passwordMatchError, setPasswordMatchError] = useState(false);
+  const [passwordError, setPasswordError] = useState(null);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -31,6 +33,11 @@ const SignUp = () => {
     });
   };
 
+  const validatePassword = (password) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -43,15 +50,21 @@ const SignUp = () => {
     } else {
       setPasswordMatchError(false);
     }
-    if (formData.fullName && formData.email && formData.password && formData.confirmPassword) {
+    if (!validatePassword(formData.password)) {
+      setPasswordError("Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.");
+      return;
+    } else {
+      setPasswordError(null);
+    }
+    try {
       const response = await axios.post("http://localhost:5001/signup", formData);
       console.log("Signup success:", response.data);
-      alert("Your account is creadted successfully")
-    } else {
+      alert("Your account is created successfully");
+      navigate('/login');
+    } catch (error) {
       console.error("Signup error:", error.response.data);
       setError(error.response.data.message);
     }
- navigate('/login');
   };
 
   return (
@@ -101,7 +114,17 @@ const SignUp = () => {
               />
             </div>
           </div>
-          <div>
+          <div className="mt-4">
+          <h3 className="text-sm font-bold text-gray-900">Password Guidelines:</h3>
+          <ul className="text-sm text-gray-700 list-disc list-inside">
+            <li>At least 8 characters long</li>
+            <li>Include an uppercase letter</li>
+            <li>Include a lowercase letter</li>
+            <li>Include a number</li>
+            <li>Include a special character (@$!%*?&)</li>
+          </ul>
+        </div>
+          <>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="password"
@@ -132,8 +155,8 @@ const SignUp = () => {
                 )}
               </button>
             </div>
-          </div>
-          <div>
+          </>
+          <>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="confirmPassword"
@@ -164,7 +187,9 @@ const SignUp = () => {
                 )}
               </button>
             </div>
-          </div>
+          </>
+          {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+          {passwordMatchError && <p className="text-sm text-red-500">Passwords do not match.</p>}
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div>
             <button
@@ -175,7 +200,7 @@ const SignUp = () => {
             </button>
           </div>
         </form>
-
+        
         <p className="mt-2 text-center text-sm text-gray-500">
           Already have an account?{" "}
           <Link
@@ -189,4 +214,5 @@ const SignUp = () => {
     </div>
   );
 };
+
 export default SignUp;

@@ -23,7 +23,9 @@ const Key = () => {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
+  const userId =  localStorage.getItem('userId');
+  // console.log(userId);
+  
   const handleClosePopup = () => {
     setIsPopupOpen(false);
     navigate("/login");
@@ -36,10 +38,11 @@ const Key = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-
+  
     try {
       const response = await axios.post("http://localhost:5001/testkey", {
         key: inputValue,
+        userId
       });
       if (response.data.success) {
         setIsPopupOpen(false);

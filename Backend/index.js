@@ -40,7 +40,10 @@ async function createUsersTable() {
       fullName TEXT,
       email TEXT UNIQUE,
       password TEXT,
-      score INTEGER
+      score INTEGER,
+      timestamp TEXT,
+      initialKey TEXT,
+      secondKey TEXT
     )
   `;
 }
@@ -208,7 +211,7 @@ const frontendQuizData = quizData.map(({ id, question, options, correctAnswer })
 
 
 
-const KeyGenerator = (function() {
+const initialKeyGenerator = (function() {
   let prefix = "GIAIC-Q1";
   let year = new Date().getFullYear();
   let currentIndex = 1;
@@ -253,20 +256,85 @@ const KeyGenerator = (function() {
   };
 })();
 
-KeyGenerator.start();
+initialKeyGenerator.start();
 
-app.post('/testkey', (req, res) => {
+const secondKeyGenerator = (function() {
+  let prefix = "GIAIC-Q1";
+  let year = new Date().getFullYear();
+  let currentIndex = 1;
+  let currentKey = null;
+  let timer = null;
+
+  function generateRandomKey() {
+    const formattedIndex = String(currentIndex).padStart(3, '0');
+    return `${prefix}-${formattedIndex}-${year}-2nd`;
+  }
+
+  function updateKey() {
+    currentKey = generateRandomKey();
+    console.log(`New Key Generated: ${currentKey}`);
+    currentIndex++;
+    if (currentIndex > 50) {
+      currentIndex = 1;
+    }
+  }
+
+  function startKeyGeneration() {
+    updateKey();
+    timer = setInterval(() => {
+      updateKey();
+    }, 60 * 60 * 1000);
+  }
+
+  function stopKeyGeneration() {
+    if (timer) {
+      clearInterval(timer);
+    }
+  }
+
+  function getCurrentKey() {
+    return currentKey;
+  }
+
+  return {
+    start: startKeyGeneration,
+    stop: stopKeyGeneration,
+    getCurrentKey: getCurrentKey
+  };
+})();
+
+secondKeyGenerator.start();
+function getCurrentTimeFormatted() {
+  const date = new Date();
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+}
+app.post('/testkey', async (req, res) => {
   const userKey = req.body.key;
-  const currentKey = KeyGenerator.getCurrentKey();
-  if (userKey === currentKey) {
+  const userId = req.body.userId;
+
+  const currentTime = getCurrentTimeFormatted();
+  // console.log(currentTime);
+  const initialKey = initialKeyGenerator.getCurrentKey();
+  const secondKey = secondKeyGenerator.getCurrentKey()
+  if (userKey === initialKey) {
     res.json({ success: true, message: "Key is valid" });
   } else {
     res.json({ success: false, message: "Key is invalid" });
   }
 });
-let score = 0;
+
 app.get("/quiz", authenticate, (req, res) => {
-  score = 0;
+
   const shuffledQuiz = shuffleArray([...frontendQuizData]);
   const shuffled = shuffledQuiz.slice(0, 5);
   const timestamp = new Date().toISOString();
@@ -276,6 +344,7 @@ app.post("/quiz", async (req, res) => {
   try {
     const { userResponses } = req.body;
     const { user } = req.body
+    let score = 0;
 
     userResponses.forEach(({ questionId, userAnswer }) => {
       const currentQuestion = quizData.find(q => q.id === questionId);
@@ -284,7 +353,6 @@ app.post("/quiz", async (req, res) => {
       }
 
       const correctAnswers = currentQuestion.correctAnswer;
-
       if (
         userAnswer &&
         userAnswer.length === correctAnswers.length &&

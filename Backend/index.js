@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
@@ -6,10 +6,13 @@ const { generateToken } = require("./middleware/jwtUtils");
 const authenticate = require("./middleware/authMiddleware");
 const app = express();
 const PORT = process.env.PORT || 5001;
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const { neon } = require('@neondatabase/serverless');
-const sql = neon(`postgresql://neondb_owner:iWK6s9ImyHgV@ep-steep-art-a5nfu9wr.us-east-2.aws.neon.tech/GIAIC_Quiz?sslmode=require`);
+const quizData = require("./quizData.json");
+const { neon } = require("@neondatabase/serverless");
+const sql = neon(
+  `postgresql://neondb_owner:iWK6s9ImyHgV@ep-steep-art-a5nfu9wr.us-east-2.aws.neon.tech/GIAIC_Quiz?sslmode=require`
+);
 
 app.use(cookieParser());
 
@@ -24,7 +27,7 @@ app.use(
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
+    credentials: true,
   })
 );
 
@@ -33,24 +36,52 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 // Create the users table if it doesn't exist
-async function createUsersTable() {
+async function createTables() {
+  // Create users table if not exists
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       fullName TEXT,
       email TEXT UNIQUE,
       password TEXT,
-      score INTEGER,
-      timestamp TEXT,
-      initialKey TEXT,
-      secondKey TEXT
+      score INTEGER
     )
   `;
+
+  // Create faculty table if not exists
+  await sql`
+    CREATE TABLE IF NOT EXISTS faculty (
+      id SERIAL PRIMARY KEY,
+      fullName TEXT,
+      email TEXT UNIQUE,
+      password TEXT
+    )
+  `;
+
+  // Create keys table if not exists
+  await sql`
+    CREATE TABLE IF NOT EXISTS keys (
+      id SERIAL PRIMARY KEY,
+      key TEXT,
+      generated_at TIMESTAMP
+    )
+  `;
+
+  // Create quizzes table if not exists
+  await sql`
+    CREATE TABLE IF NOT EXISTS typescriptQuiz (
+      id SERIAL PRIMARY KEY,
+      question TEXT,
+      options TEXT[],
+      correctAnswer TEXT[]
+    )
+  `;
+
 }
 
-createUsersTable();
+createTables();
 
-app.post("/signup", async (req, res) => {
+app.post("/signup",  async (req, res) => {
   const { fullName, email, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -104,9 +135,62 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/logout", async (req, res) => {
-  res.cookie('token', '', { expires: new Date(0), httpOnly: true });
-  res.status(200).json({ success: true, message: 'User logged out successfully' });
+app.get("/logout", authenticate, async (req, res) => {
+  res.cookie("token", "", { expires: new Date(0), httpOnly: true });
+  res
+    .status(200)
+    .json({ success: true, message: "User logged out successfully" });
+});
+
+app.post("/signup-faculty", async (req, res) => {
+  const { fullName, email, password, key } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const keyCode = "GIAIC_FACULTY_2024";
+  try {
+    const existingUser =
+      await sql`SELECT * FROM faculty WHERE email = ${email}`;
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Faculty member already exists" });
+    }
+    if (keyCode === key) {
+      await sql`
+  INSERT INTO faculty (fullName, email,password) VALUES (${fullName}, ${email}, ${hashedPassword})`;
+    }
+    const token = generateToken({ email });
+    res.json({ message: "Faculty member signed up successfully", token });
+  } catch (err) {
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+app.post("/login-faculty", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+  try {
+    const faculty = await sql`SELECT * FROM faculty WHERE email = ${email}`;
+    if (faculty.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const passwordMatch = await bcrypt.compare(password, faculty[0].password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const token = generateToken({
+      id: faculty[0].id,
+      fullName: faculty[0].fullName,
+      email: faculty[0].email,
+    });
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000,
+    });
+
+    return res.json({ msg: "success", id: faculty[0].id });
+  } catch (error) {
+    console.error("Error while comparing passwords:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 function shuffleArray(array) {
@@ -116,120 +200,40 @@ function shuffleArray(array) {
   }
   return array;
 }
+const frontendQuizData = quizData.map(
+  ({ id, question, options, correctAnswer }) => ({
+    id,
+    question,
+    options,
+    answersQuantity: correctAnswer.length < 2 ? "single" : "multiple",
+  })
+);
 
-const quizData = [
-  {
-    id: 1,
-    question: "What is the capital of France?",
-    options: ["Paris", "London", "Berlin", "Madrid", "Jeddah"],
-    correctAnswer: ["Paris"],
-  },
-  {
-    id: 2,
-    question: "Which of the following are primary colors?",
-    options: ["Red", "Green", "Blue", "Yellow"],
-    correctAnswer: ["Red", "Blue", "Yellow"],
-  },
-  {
-    id: 3,
-    question: "Which of the following countries are part of the G7 group?",
-    options: ["United States", "China", "Japan", "France"],
-    correctAnswer: ["United States", "Japan", "France"],
-  },
-  {
-    id: 4,
-    question: "Who wrote 'Romeo and Juliet'?",
-    options: [
-      "William Shakespeare",
-      "Jane Austen",
-      "Charles Dickens",
-      "Leo Tolstoy",
-    ],
-    correctAnswer: ["William Shakespeare"],
-  },
-  {
-    id: 5,
-    question: "Who wrote 'Hamlet'?",
-    options: [
-      "William Shakespeare",
-      "Jane Austen",
-      "Charles Dickens",
-      "Leo Tolstoy",
-    ],
-    correctAnswer: ["William Shakespeare"],
-  },
-  {
-    id: 6,
-    question: "Which of the following elements are noble gases?",
-    options: ["Helium", "Oxygen", "Neon", "Nitrogen"],
-    correctAnswer: ["Helium", "Neon"],
-  },
-  {
-    id: 7,
-    question: "What is the chemical symbol for gold?",
-    options: ["Au", "Ag", "Hg", "Fe"],
-    correctAnswer: ["Au"],
-  },
-  {
-    id: 8,
-    question: "What is the capital city of Australia?",
-    options: ["Sydney", "Canberra", "Melbourne", "Brisbane", "London"],
-    correctAnswer: ["Canberra"],
-  },
-  {
-    id: 9,
-    question: "In which year did Christopher Columbus reach the Americas?",
-    options: ["1492", "1607", "1776", "1453"],
-    correctAnswer: ["1492"],
-  },
-  {
-    id: 10,
-    question:
-      "Which of the following planets are considered terrestrial planets?",
-    options: ["Mercury", "Jupiter", "Earth", "Saturn"],
-    correctAnswer: ["Mercury", "Earth"],
-  },
-  {
-    id: 11,
-    question: "Who is known as the father of modern physics?",
-    options: [
-      "Albert Einstein",
-      "Isaac Newton",
-      "Galileo Galilei",
-      "Nikola Tesla",
-    ],
-    correctAnswer: ["Albert Einstein"],
-  },
-];
-
-const frontendQuizData = quizData.map(({ id, question, options, correctAnswer }) => ({
-  id,
-  question,
-  options,
-  answersQuantity: correctAnswer.length < 2 ?  "single": "multiple",
-}));
-
-
-
-const initialKeyGenerator = (function() {
-  let prefix = "GIAIC-Q1";
+const keyGenerator = (function () {
+  let prefix = "giaic-q1";
   let year = new Date().getFullYear();
-  let currentIndex = 1;
   let currentKey = null;
   let timer = null;
 
-  function generateRandomKey() {
-    const formattedIndex = String(currentIndex).padStart(3, '0');
-    return `${prefix}-${formattedIndex}-${year}`;
+  async function saveKeyToDatabase(key) {
+    try {
+      await sql`
+        INSERT INTO keys (key, generated_at) VALUES (${key}, ${getCurrentTimeFormatted()})
+      `;
+    } catch (error) {
+      console.error("Error saving key to database:", error);
+    }
   }
 
-  function updateKey() {
+  function generateRandomKey() {
+    const randomString = Math.random().toString(36).substr(2, 5);
+    return `${prefix}-${randomString}-${year}`;
+  }
+
+  async function updateKey() {
     currentKey = generateRandomKey();
     console.log(`New Key Generated: ${currentKey}`);
-    currentIndex++;
-    if (currentIndex > 50) {
-      currentIndex = 1;
-    }
+    await saveKeyToDatabase(currentKey);
   }
 
   function startKeyGeneration() {
@@ -252,80 +256,64 @@ const initialKeyGenerator = (function() {
   return {
     start: startKeyGeneration,
     stop: stopKeyGeneration,
-    getCurrentKey: getCurrentKey
+    getCurrentKey: getCurrentKey,
   };
 })();
 
-initialKeyGenerator.start();
+keyGenerator.start();
 
-const secondKeyGenerator = (function() {
-  let prefix = "GIAIC-Q1";
-  let year = new Date().getFullYear();
-  let currentIndex = 1;
-  let currentKey = null;
-  let timer = null;
-
-  function generateRandomKey() {
-    const formattedIndex = String(currentIndex).padStart(3, '0');
-    return `${prefix}-${formattedIndex}-${year}-2nd`;
-  }
-
-  function updateKey() {
-    currentKey = generateRandomKey();
-    console.log(`New Key Generated: ${currentKey}`);
-    currentIndex++;
-    if (currentIndex > 50) {
-      currentIndex = 1;
-    }
-  }
-
-  function startKeyGeneration() {
-    updateKey();
-    timer = setInterval(() => {
-      updateKey();
-    }, 60 * 60 * 1000);
-  }
-
-  function stopKeyGeneration() {
-    if (timer) {
-      clearInterval(timer);
-    }
-  }
-
-  function getCurrentKey() {
-    return currentKey;
-  }
-
-  return {
-    start: startKeyGeneration,
-    stop: stopKeyGeneration,
-    getCurrentKey: getCurrentKey
-  };
-})();
-
-secondKeyGenerator.start();
 function getCurrentTimeFormatted() {
   const date = new Date();
-
-  const day = String(date.getDate()).padStart(2, '0');
-  const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const day = String(date.getDate()).padStart(2, "0");
+  const monthNames = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
   const month = monthNames[date.getMonth()];
   const year = date.getFullYear();
-  
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
 
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 }
-app.post('/testkey', async (req, res) => {
+app.get("/testkey", async (req, res) => {
+  const initialKey = keyGenerator.getCurrentKey();
+  res.json({ initialKey });
+});
+app.post("/faculty", authenticate, async (req, res) => {
+  const { id } = req.body;
+  // console.log(id);
+  try {
+    const faculty = await sql`SELECT * FROM faculty WHERE id = ${id}`;
+    // console.log(faculty);
+    
+    if (faculty.length === 0) {
+      return res.status(404).json({ error: "Faculty member not found" });
+    }
+    res.json(faculty[0]);
+  } catch (error) {
+    console.error("Error fetching faculty member:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post("/testkey", async (req, res) => {
   const userKey = req.body.key;
   const userId = req.body.userId;
+  console.log(userId);
 
-  const currentTime = getCurrentTimeFormatted();
-  // console.log(currentTime);
-  const initialKey = initialKeyGenerator.getCurrentKey();
-  const secondKey = secondKeyGenerator.getCurrentKey()
+  const initialKey = keyGenerator.getCurrentKey();
   if (userKey === initialKey) {
     res.json({ success: true, message: "Key is valid" });
   } else {
@@ -334,20 +322,20 @@ app.post('/testkey', async (req, res) => {
 });
 
 app.get("/quiz", authenticate, (req, res) => {
-
   const shuffledQuiz = shuffleArray([...frontendQuizData]);
   const shuffled = shuffledQuiz.slice(0, 5);
   const timestamp = new Date().toISOString();
   res.json({ questions: shuffled, timestamp });
 });
-app.post("/quiz", async (req, res) => {
+
+app.post("/quiz", authenticate, async (req, res) => {
   try {
     const { userResponses } = req.body;
-    const { user } = req.body
+    const { user } = req.body;
     let score = 0;
 
     userResponses.forEach(({ questionId, userAnswer }) => {
-      const currentQuestion = quizData.find(q => q.id === questionId);
+      const currentQuestion = quizData.find((q) => q.id === questionId);
       if (!currentQuestion) {
         throw new Error("Invalid question ID");
       }
@@ -356,20 +344,19 @@ app.post("/quiz", async (req, res) => {
       if (
         userAnswer &&
         userAnswer.length === correctAnswers.length &&
-        userAnswer.every(ans => correctAnswers.includes(ans))
+        userAnswer.every((ans) => correctAnswers.includes(ans))
       ) {
         score++;
       }
     });
-    
+
     await sql`
       UPDATE users
       SET score = ${score}
       WHERE id = ${user}
     `;
-    
 
-    res.json({ success: true, score }); 
+    res.json({ success: true, score });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

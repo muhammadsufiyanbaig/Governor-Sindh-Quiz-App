@@ -1,0 +1,84 @@
+[
+    {
+      "id": 1,
+      "question": "What is the capital of France?",
+      "options": ["Paris", "London", "Berlin", "Madrid", "Jeddah"],
+      "correctAnswer": ["Paris"]
+    },
+    {
+      "id": 2,
+      "question": "Which of the following are primary colors?",
+      "options": ["Red", "Green", "Blue", "Yellow"],
+      "correctAnswer": ["Red", "Blue", "Yellow"]
+    },
+    {
+      "id": 3,
+      "question": "Which of the following countries are part of the G7 group?",
+      "options": ["United States", "China", "Japan", "France"],
+      "correctAnswer": ["United States", "Japan", "France"]
+    },
+    {
+      "id": 4,
+      "question": "Who wrote 'Romeo and Juliet'?",
+      "options": [
+        "William Shakespeare",
+        "Jane Austen",
+        "Charles Dickens",
+        "Leo Tolstoy"
+      ],
+      "correctAnswer": ["William Shakespeare"]
+    },
+    {
+      "id": 5,
+      "question": "Who wrote 'Hamlet'?",
+      "options": [
+        "William Shakespeare",
+        "Jane Austen",
+        "Charles Dickens",
+        "Leo Tolstoy"
+      ],
+      "correctAnswer": ["William Shakespeare"]
+    },
+    {
+      "id": 6,
+      "question": "Which of the following elements are noble gases?",
+      "options": ["Helium", "Oxygen", "Neon", "Nitrogen"],
+      "correctAnswer": ["Helium", "Neon"]
+    },
+    {
+      "id": 7,
+      "question": "What is the chemical symbol for gold?",
+      "options": ["Au", "Ag", "Hg", "Fe"],
+      "correctAnswer": ["Au"]
+    },
+    {
+      "id": 8,
+      "question": "What is the capital city of Australia?",
+      "options": ["Sydney", "Canberra", "Melbourne", "Brisbane", "London"],
+      "correctAnswer": ["Canberra"]
+    },
+    {
+      "id": 9,
+      "question": "In which year did Christopher Columbus reach the Americas?",
+      "options": ["1492", "1607", "1776", "1453"],
+      "correctAnswer": ["1492"]
+    },
+    {
+      "id": 10,
+      "question": "Which of the following planets are considered terrestrial planets?",
+      "options": ["Mercury", "Jupiter", "Earth", "Saturn"],
+      "correctAnswer": ["Mercury", "Earth"]
+    },
+    {
+      "id": 11,
+      "question": "Who is known as the father of modern physics?",
+      "options": [
+        "Albert Einstein",
+        "Isaac Newton",
+        "Galileo Galilei",
+        "Nikola Tesla"
+      ],
+      "correctAnswer": ["Albert Einstein"]
+    }
+  ]
+  

@@ -4,15 +4,29 @@ import axios from "axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 const Guidelines = () => {
   return (
-    <div className="mb-4">
-      <h3 className="text-lg font-bold mb-2">Exam Guidelines:</h3>
-      <ul className="list-disc pl-5">
-        <li>Time: 45 minutes</li>
-        <li>In some questions, you can choose 1 or more answers.</li>
-        <li>
-          You can't minimize your full screen. If you do, your quiz will end.
-        </li>
+    <div className="mb-4 space-y-2">
+    <>
+      <h3 className="text-lg font-bold">TypeScript Quiz Instructions:</h3>
+      <ul className=" pl-5">
+        <li><b>Quiz Name: </b>TypeScript Quiz</li>
+        <li><b>Total Questions: </b>30</li>
+        <li><b>Total Time: </b>45 minutes</li>
       </ul>
+    </>
+    <>
+      <h3 className="text-lg font-bold text-red-500">Note:</h3>
+      <ol className="list-disc pl-3 space-y-2">
+        <li>
+        By starting this quiz, you agree not to take pictures, copy any questions, or share them publicly. Your registration may be suspended if you are found guilty of violating this agreement.
+        </li>
+        <li>
+        The timer will start once you click the start button, and the quiz will auto-submit after 45 minutes.
+        </li>
+        <li>
+        Do not press any special characters, function keys, or keys such as <b>Ctrl, Alt, Shift, or Windows</b>. Pressing these keys will cause your time to lapse.
+        </li>
+      </ol>
+    </>
     </div>
   );
 };
@@ -65,7 +79,7 @@ const Key = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       {isPopupOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full md:w-1/2 lg:w-1/3">
+          <div className="bg-white p-6 rounded shadow-lg w-full md:w-1/2">
             <Guidelines />
             <h2 className="text-lg font-bold mb-4">Enter Test Key:</h2>
             <form onSubmit={handleSubmit}>

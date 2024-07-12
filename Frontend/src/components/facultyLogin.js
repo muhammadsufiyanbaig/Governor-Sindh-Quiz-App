@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from '../AuthContext';
 
-const Login = () => {
+const FacultyLogin = () => {
   const [show, setShow] = useState(false);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
@@ -12,7 +11,6 @@ const Login = () => {
     password: "",
   });
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const togglePasswordVisibility = () => {
     setShow(!show);
@@ -33,14 +31,14 @@ const Login = () => {
     }
     try {
       const response = await axios.post(
-        "http://localhost:5001/login",
+        "http://localhost:5001/login-faculty",
         formData, {
           withCredentials: true
         }
       );
-      // console.log("Login success:", response.data);
-      login(response.data.id);
-      navigate("/testkey");
+      console.log("Login success:", response.data);
+      localStorage.setItem('FacultyId', JSON.stringify(response.data.id));
+      navigate("/faculty");
     } catch (error) {
       console.error("Login error:", error.response.data);
       setError(error.response.data.message);
@@ -51,6 +49,9 @@ const Login = () => {
     <>
       <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+          <h2 className="mt-10 text-center text-3xl font-bold tracking-tight text-green-600">
+            Welcome to Faculty Portal
+          </h2>
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Sign in to your account
           </h2>
@@ -119,14 +120,10 @@ const Login = () => {
           <p className="mt-10 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
-              to="/signup"
+              to="/facultysignup"
               className="font-semibold leading-6 text-green-500 hover:text-green-500"
             >
               SignUp
-            </Link>
-            {" "}or {" "}
-            <Link to='/facultylogin' className="font-semibold leading-6 text-green-500 hover:text-green-500">
-            faculty member
             </Link>
           </p>
         </div>
@@ -135,4 +132,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default FacultyLogin;

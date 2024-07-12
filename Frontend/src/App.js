@@ -6,6 +6,9 @@ import SignUp from './components/Signup';
 import Key from './components/key';
 import ProtectedRoute from './ProtectedRoute';
 import { AuthProvider } from './AuthContext';
+import FacultyPortal from './components/facultyPortal';
+import FacultyLogin from './components/facultyLogin';
+import FacultySignup from './components/facultySignup';
 
 const App = () => {
   return (
@@ -29,6 +32,18 @@ const App = () => {
               <Quiz />
             </ProtectedRoute>
           }
+        />
+        <Route
+          path="faculty"
+          element={<FacultyPortal />}
+        />
+        <Route
+          path="facultylogin"
+          element={<FacultyLogin />}
+        />
+        <Route
+          path="facultysignup"
+          element={<FacultySignup />}
         />
       </Routes>
     </AuthProvider>

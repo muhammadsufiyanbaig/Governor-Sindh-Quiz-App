@@ -18,22 +18,28 @@ const Quiz = () => {
     fetchQuizData();
     // eslint-disable-next-line
   }, []);
-
   const fetchQuizData = async () => {
     try {
-
       const response = await axios.get("http://localhost:5001/quiz", {
         withCredentials: true,
       });
       const data = response.data.questions;
       setQuizData(data);
-
+  
       const startTime = new Date(response.data.timestamp).getTime();
-      startTimer(startTime);
+      const localStoredTime = localStorage.getItem("startingTime");
+      
+      if (!localStoredTime) {
+        localStorage.setItem("startingTime", startTime);
+        startTimer(startTime);
+      } else {
+        startTimer(parseInt(localStoredTime, 10));
+      }
     } catch (error) {
       console.error("Error fetching quiz data:", error);
     }
   };
+  
 
   const startTimer = (startTime) => {
     const duration = 45 * 60 * 1000;
@@ -82,11 +88,7 @@ const Quiz = () => {
     }
   };
 
-  const previousQuestion = () => {
-    if (currQuesNo > 0) {
-      setCurrQuesNo((prev) => prev - 1);
-    }
-  };
+
 
   const endQuiz = () => {
     navigate("/login");
@@ -120,7 +122,7 @@ const Quiz = () => {
       const response = await axios.post("http://localhost:5001/quiz", {
         userResponses,
         user
-      });
+      }, { withCredentials: true });
       if (response.data.success) {
         setQuizEnded(true);
         setScore(response.data.score);
@@ -213,6 +215,8 @@ const Quiz = () => {
                   <h3 className="font-bold text-2xl ">
                     <b>{quizData[currQuesNo].question}</b>
                   </h3>
+                  {quizData[currQuesNo].answersQuantity === "multiple" ? 
+                  <p className="font-medium text-base text-green-500 mt-2">You can choose more then 1 answer</p> : ""}
                 </div>
                 <div id="box" className="flex flex-col mb-6">
                   <div id="options">
@@ -238,17 +242,8 @@ const Quiz = () => {
                     {errorMessage}
                   </p>
                 </div>
-                <div className={`flex items-center justify-between`}>
-                  <button
-                    className={
-                      currQuesNo === 0
-                        ? "invisible"
-                        : " text-gray-700 bg-gray-200 hover:bg-gray-300 px-4 text-left py-2 rounded"
-                    }
-                    onClick={previousQuestion}
-                  >
-                    Back
-                  </button>
+                <div className={`flex items-center justify-end`}>
+                 
                   <button
                     className="bg-green-500 hover:bg-green-600 font-bold text-white px-4 text-left py-2 rounded"
                     onClick={nextQuestion}

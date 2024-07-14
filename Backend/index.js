@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const quizData = require("./quizData.json");
+// const quizData = require("./quizData.json");
 const { neon } = require("@neondatabase/serverless");
 const sql = neon(
   `postgresql://neondb_owner:iWK6s9ImyHgV@ep-steep-art-a5nfu9wr.us-east-2.aws.neon.tech/GIAIC_Quiz?sslmode=require`
@@ -80,7 +80,7 @@ async function createTables() {
 }
 
 createTables();
-
+ 
 app.post("/signup",  async (req, res) => {
   const { fullName, email, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -100,7 +100,7 @@ app.post("/signup",  async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
+ 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -155,7 +155,7 @@ app.post("/signup-faculty", async (req, res) => {
     if (keyCode === key) {
       await sql`
   INSERT INTO faculty (fullName, email,password) VALUES (${fullName}, ${email}, ${hashedPassword})`;
-    }
+    }     
     const token = generateToken({ email });
     res.json({ message: "Faculty member signed up successfully", token });
   } catch (err) {
@@ -200,14 +200,7 @@ function shuffleArray(array) {
   }
   return array;
 }
-const frontendQuizData = quizData.map(
-  ({ id, question, options, correctAnswer }) => ({
-    id,
-    question,
-    options,
-    answersQuantity: correctAnswer.length < 2 ? "single" : "multiple",
-  })
-);
+
 
 const keyGenerator = (function () {
   let prefix = "giaic-q1";
@@ -321,7 +314,24 @@ app.post("/testkey", async (req, res) => {
   }
 });
 
-app.get("/quiz", authenticate, (req, res) => {
+app.get("/quiz", authenticate, async (req, res) => {
+  const result = await sql`SELECT id, question, options, correctanswer FROM typescriptQuiz`;
+  // console.log(result);
+  // Format the result into the desired structure
+  const quizData = result.map(row => ({
+    id: row.id,
+    question: row.question,
+    options: row.options,
+    correctAnswer: row.correctanswer
+  }));
+  const frontendQuizData = quizData.map(
+    ({ id, question, options, correctAnswer }) => ({
+      id,
+      question,
+      options,
+      answersQuantity: correctAnswer.length < 2 ? "single" : "multiple",
+    })
+  );
   const shuffledQuiz = shuffleArray([...frontendQuizData]);
   const shuffled = shuffledQuiz.slice(0, 5);
   const timestamp = new Date().toISOString();

@@ -213,7 +213,7 @@ const SignUp = () => {
                 htmlFor="key"
                 className="block text-sm font-medium leading-6 text-gray-900"
               >
-                Key
+                Secret Code
               </label>
             </div>
             <div className="mt-2 relative">

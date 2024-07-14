@@ -18,33 +18,39 @@ const FacultyPortal = () => {
   const [currentKey, setCurrentKey] = useState('');
   const [faculty, setFaculty] = useState(null);
 
-  useEffect(() => {
-    const fetchKey = async () => {
+  const fetchKey = async () => {
+    try {
+      const response = await axios.get('http://localhost:5001/testkey');
+      setCurrentKey(response.data.initialKey);
+    } catch (error) {
+      console.error('Error fetching the key:', error);
+    }
+  };
+
+  const fetchFaculty = async () => {
+    const storedFacultyId = localStorage.getItem('FacultyId');
+    console.log(storedFacultyId);
+    if (storedFacultyId) {
       try {
-        const response = await axios.get('http://localhost:5001/testkey');
-        setCurrentKey(response.data.initialKey);
+        const response = await axios.post(`http://localhost:5001/faculty`, { id: storedFacultyId }, { withCredentials: true });
+        console.log(response);
+        setFaculty(response.data);
       } catch (error) {
-        console.error('Error fetching the key:', error);
+        console.error('Error fetching faculty data:', error);
       }
-    };
+    }
+  };
 
-    const fetchFaculty = async () => {
-        const storedFacultyId = localStorage.getItem('FacultyId');
-        console.log(storedFacultyId);
-        if (storedFacultyId) {
-          try {
-            const response = await axios.post(`http://localhost:5001/faculty`,{id: storedFacultyId}, { withCredentials: true });
-            console.log(response);
-            setFaculty(response.data);
-          } catch (error) {
-            console.error('Error fetching faculty data:', error);
-          }
-        }
-      };
-      
-
+  useEffect(() => {
     fetchKey();
     fetchFaculty();
+
+    const interval = setInterval(() => {
+      fetchKey();
+      fetchFaculty();
+    }, 60 * 60 * 1000); //1 hour
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleToggleMenu = () => {

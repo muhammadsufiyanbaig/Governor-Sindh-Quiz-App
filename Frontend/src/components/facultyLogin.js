@@ -36,6 +36,9 @@ const FacultyLogin = () => {
           withCredentials: true
         }
       );
+      if (response.data.error === 'Invalid credentials') {
+        alert("Invalid email or password!");
+      }
       console.log("Login success:", response.data);
       localStorage.setItem('FacultyId', JSON.stringify(response.data.id));
       navigate("/faculty");

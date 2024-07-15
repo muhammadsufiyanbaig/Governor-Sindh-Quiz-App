@@ -33,13 +33,16 @@ const Login = () => {
     }
     try {
       const response = await axios.post(
-        "http://localhost:5001/login",
+        "https://portal.governorsindh.com/api/auth/login",
         formData, {
           withCredentials: true
         }
       );
-      // console.log("Login success:", response.data);
+      console.log("Login success:", response.data);
       login(response.data.id);
+
+        localStorage.setItem("userId",response.data.id);
+
       navigate("/testkey");
     } catch (error) {
       console.error("Login error:", error.response.data);

@@ -8,11 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-// const quizData = require("./quizData.json");
 const { neon } = require("@neondatabase/serverless");
-const sql = neon(
-  `postgresql://neondb_owner:iWK6s9ImyHgV@ep-steep-art-a5nfu9wr.us-east-2.aws.neon.tech/GIAIC_Quiz?sslmode=require`
-);
+const sql = neon(process.env.Database_string);
 
 app.use(cookieParser());
 
@@ -24,7 +21,7 @@ getPgVersion();
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "https://portal.governorsindh.com/"],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -43,8 +40,7 @@ async function createTables() {
       id SERIAL PRIMARY KEY,
       fullName TEXT,
       email TEXT UNIQUE,
-      password TEXT,
-      score INTEGER
+      password TEXT
     )
   `;
 
@@ -76,12 +72,19 @@ async function createTables() {
       correctAnswer TEXT[]
     )
   `;
-
+  await sql`
+    CREATE TABLE IF NOT EXISTS result (
+      user_id INT PRIMARY KEY,
+      ts_quiz_score INT,
+      ts_quiz_timestamp TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `;
 }
 
 createTables();
- 
-app.post("/signup",  async (req, res) => {
+
+app.post("/signup", async (req, res) => {
   const { fullName, email, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -100,7 +103,7 @@ app.post("/signup",  async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
- 
+
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -155,7 +158,7 @@ app.post("/signup-faculty", async (req, res) => {
     if (keyCode === key) {
       await sql`
   INSERT INTO faculty (fullName, email,password) VALUES (${fullName}, ${email}, ${hashedPassword})`;
-    }     
+    }
     const token = generateToken({ email });
     res.json({ message: "Faculty member signed up successfully", token });
   } catch (err) {
@@ -201,10 +204,7 @@ function shuffleArray(array) {
   return array;
 }
 
-
 const keyGenerator = (function () {
-  let prefix = "giaic-q1";
-  let year = new Date().getFullYear();
   let currentKey = null;
   let timer = null;
 
@@ -219,8 +219,8 @@ const keyGenerator = (function () {
   }
 
   function generateRandomKey() {
-    const randomString = Math.random().toString(36).substr(2, 5);
-    return `${prefix}-${randomString}-${year}`;
+    const randomString = Math.random().toString(36).substr(2, 6);
+    return `${randomString}`;
   }
 
   async function updateKey() {
@@ -290,7 +290,7 @@ app.post("/faculty", authenticate, async (req, res) => {
   try {
     const faculty = await sql`SELECT * FROM faculty WHERE id = ${id}`;
     // console.log(faculty);
-    
+
     if (faculty.length === 0) {
       return res.status(404).json({ error: "Faculty member not found" });
     }
@@ -304,8 +304,14 @@ app.post("/faculty", authenticate, async (req, res) => {
 app.post("/testkey", async (req, res) => {
   const userKey = req.body.key;
   const userId = req.body.userId;
-  console.log(userId);
-
+  // console.log(userId);
+  const token = generateToken({
+    userId,
+  });
+  res.cookie("token", token, {
+    httpOnly: true,
+    maxAge: 60 * 60 * 1000,
+  });
   const initialKey = keyGenerator.getCurrentKey();
   if (userKey === initialKey) {
     res.json({ success: true, message: "Key is valid" });
@@ -314,15 +320,16 @@ app.post("/testkey", async (req, res) => {
   }
 });
 
-app.get("/quiz", authenticate, async (req, res) => {
+app.post("/quizData", authenticate, async (req, res) => {
+  const { user } = req.body;
   const result = await sql`SELECT id, question, options, correctanswer FROM typescriptQuiz`;
   // console.log(result);
   // Format the result into the desired structure
-  const quizData = result.map(row => ({
+  const quizData = result.map((row) => ({
     id: row.id,
     question: row.question,
     options: row.options,
-    correctAnswer: row.correctanswer
+    correctAnswer: row.correctanswer,
   }));
   const frontendQuizData = quizData.map(
     ({ id, question, options, correctAnswer }) => ({
@@ -332,41 +339,41 @@ app.get("/quiz", authenticate, async (req, res) => {
       answersQuantity: correctAnswer.length < 2 ? "single" : "multiple",
     })
   );
+  const existingResult = await sql`SELECT ts_quiz_score FROM result WHERE user_id = ${user}`;
+  if (existingResult.length > 0) {
+    const previousScore = existingResult[0].ts_quiz_score;
+    return res.json({ success: false });
+  } else {
   const shuffledQuiz = shuffleArray([...frontendQuizData]);
   const shuffled = shuffledQuiz.slice(0, 5);
   const timestamp = new Date().toISOString();
   res.json({ questions: shuffled, timestamp });
-});
+}});
 
 app.post("/quiz", authenticate, async (req, res) => {
   try {
+    const fetchingQuiz = await sql`SELECT id, question, options, correctanswer FROM typescriptQuiz`;
+    // Format the result into the desired structure
+    const quizData = fetchingQuiz.map((row) => ({ id: row.id, question: row.question, options: row.options, correctAnswer: row.correctanswer,}));
     const { userResponses } = req.body;
     const { user } = req.body;
-    let score = 0;
-
-    userResponses.forEach(({ questionId, userAnswer }) => {
-      const currentQuestion = quizData.find((q) => q.id === questionId);
-      if (!currentQuestion) {
-        throw new Error("Invalid question ID");
-      }
-
-      const correctAnswers = currentQuestion.correctAnswer;
-      if (
-        userAnswer &&
-        userAnswer.length === correctAnswers.length &&
-        userAnswer.every((ans) => correctAnswers.includes(ans))
-      ) {
-        score++;
-      }
-    });
-
-    await sql`
-      UPDATE users
-      SET score = ${score}
-      WHERE id = ${user}
-    `;
-
-    res.json({ success: true, score });
+    let score = 0;   
+      userResponses.forEach(({ questionId, userAnswer }) => {
+        const currentQuestion = quizData.find((q) => q.id === questionId);
+        if (!currentQuestion) {
+          throw new Error("Invalid question ID");
+        }
+  
+        const correctAnswers = currentQuestion.correctAnswer;
+        if ( userAnswer && userAnswer.length === correctAnswers.length && userAnswer.every((ans) => correctAnswers.includes(ans))) {
+          score++;
+        }
+      });
+      const timestamp = getCurrentTimeFormatted();
+      await sql`INSERT INTO result (user_id, ts_quiz_score, ts_quiz_timestamp) VALUES (${user}, ${score}, ${timestamp})`;
+      res.json({ success: true });
+    
+    
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

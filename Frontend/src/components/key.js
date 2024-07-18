@@ -42,7 +42,7 @@ const Key = () => {
   
   const handleClosePopup = () => {
     setIsPopupOpen(false);
-    navigate("/login");
+    navigate("/auth/login");
   };
 
   const handleInputChange = (e) => {

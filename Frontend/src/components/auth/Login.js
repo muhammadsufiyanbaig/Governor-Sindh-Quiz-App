@@ -123,13 +123,13 @@ const Login = () => {
           <p className="mt-10 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
-              to="/signup"
+              to="auth/signup"
               className="font-semibold leading-6 text-green-500 hover:text-green-500"
             >
               SignUp
             </Link>
             {" "}or {" "}
-            <Link to='/facultylogin' className="font-semibold leading-6 text-green-500 hover:text-green-500">
+            <Link to='/faculty/auth/login' className="font-semibold leading-6 text-green-500 hover:text-green-500">
             faculty member
             </Link>
           </p>

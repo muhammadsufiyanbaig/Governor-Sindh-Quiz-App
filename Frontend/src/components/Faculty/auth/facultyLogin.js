@@ -36,12 +36,12 @@ const FacultyLogin = () => {
           withCredentials: true
         }
       );
-      if (response.data.error === 'Invalid credentials') {
+      if (response.data.error) {
         alert("Invalid email or password!");
       }
       console.log("Login success:", response.data);
       localStorage.setItem('FacultyId', response.data.id);
-      navigate("/faculty");
+      navigate("/faculty/portal");
     } catch (error) {
       console.error("Login error:", error.response.data);
       setError(error.response.data.message);
@@ -123,7 +123,7 @@ const FacultyLogin = () => {
           <p className="mt-10 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
-              to="/facultysignup"
+              to="/faculty/auth/signup"
               className="font-semibold leading-6 text-green-500 hover:text-green-500"
             >
               SignUp

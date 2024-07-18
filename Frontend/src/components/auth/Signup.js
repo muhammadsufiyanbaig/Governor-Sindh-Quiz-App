@@ -60,7 +60,7 @@ const SignUp = () => {
       const response = await axios.post("http://localhost:5001/auth/signup", formData);
       console.log("Signup success:", response.data);
       alert("Your account is created successfully");
-      navigate('/login');
+      navigate('/auth/login');
     } catch (error) {
       console.error("Signup error:", error.response.data);
       setError(error.response.data.message);
@@ -204,7 +204,7 @@ const SignUp = () => {
         <p className="mt-2 text-center text-sm text-gray-500">
           Already have an account?{" "}
           <Link
-            to="/login"
+            to="/auth/login"
             className="font-semibold leading-6 text-green-500 hover:text-green-500"
           >
             Login

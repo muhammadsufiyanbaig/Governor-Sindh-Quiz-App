@@ -90,7 +90,7 @@ const Quiz = () => {
   };
 
   const endQuiz = () => {
-    navigate("/login");
+    navigate("/auth/login");
     document.cookie.replace("token", "");
     localStorage.clear();
   };

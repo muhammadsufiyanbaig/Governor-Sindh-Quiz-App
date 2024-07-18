@@ -54,7 +54,7 @@ const Key = () => {
     setError(null);
   
     try {
-      const response = await axios.post("http://localhost:5001/testkey", {
+      const response = await axios.post("http://localhost:5001/key/testkey", {
         key: inputValue,
         userId
       });

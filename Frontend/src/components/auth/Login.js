@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../../ProtectedRoutes/AuthContext';
 
 const Login = () => {
   const [show, setShow] = useState(false);
@@ -32,8 +32,9 @@ const Login = () => {
       return;
     }
     try {
+      document.cookie.replace("token", "");
       const response = await axios.post(
-        "https://portal.governorsindh.com/api/auth/login",
+        "http://localhost:5001/auth/login",
         formData, {
           withCredentials: true
         }

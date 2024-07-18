@@ -31,7 +31,7 @@ const FacultyLogin = () => {
     }
     try {
       const response = await axios.post(
-        "http://localhost:5001/login-faculty",
+        "http://localhost:5001/faculty/login-faculty",
         formData, {
           withCredentials: true
         }
@@ -40,7 +40,7 @@ const FacultyLogin = () => {
         alert("Invalid email or password!");
       }
       console.log("Login success:", response.data);
-      localStorage.setItem('FacultyId', JSON.stringify(response.data.id));
+      localStorage.setItem('FacultyId', response.data.id);
       navigate("/faculty");
     } catch (error) {
       console.error("Login error:", error.response.data);

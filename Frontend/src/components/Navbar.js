@@ -9,7 +9,7 @@ const Navbar = () => {
 
   const logout = async () => {
     try {
-      await axios.get('http://localhost:5001/logout');
+      await axios.get('http://localhost:5001/auth/logout');
       navigate("/login");
     } catch (error) {
       console.log(error);

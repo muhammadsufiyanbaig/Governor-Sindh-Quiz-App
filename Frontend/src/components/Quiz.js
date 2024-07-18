@@ -21,7 +21,7 @@ const Quiz = () => {
     try {
       const user = localStorage.getItem("userId");
       console.log(user);
-      const response = await axios.post("http://localhost:5001/quizData",{user}, {withCredentials: true});
+      const response = await axios.post("http://localhost:5001/quiz/quizData",{user}, {withCredentials: true});
       if (response.data.success === false) {
 
         setUserExist(true);
@@ -120,7 +120,7 @@ const Quiz = () => {
    if (userExist === false) {
     try {
       const response = await axios.post(
-        "http://localhost:5001/quiz",{ userResponses, user},{ withCredentials: true });
+        "http://localhost:5001/quiz/quiz",{ userResponses, user},{ withCredentials: true });
       if (response.data.success) {
         setQuizEnded(true);
       } else {
@@ -208,7 +208,6 @@ const Quiz = () => {
             <h1 className="text-green-500 text-center font-bold text-3xl mb-6">
               Question #{currQuesIndx + 1}
             </h1>
-
             {quizData.length > currQuesIndx && quizData[currQuesIndx] && (
               <div>
                 <div id="question" className="text-center mb-6">
@@ -262,7 +261,7 @@ const Quiz = () => {
         {quizEnded && (
           <div className="bg-white items-center px-3 py-4 w-full md:w-1/2 lg:w-1/3 shadow-lg rounded-lg">
             {userExist && (
-              <p className="text-center text-2xl font-bold text-green-500 mt-4">You already performed quiz</p>
+              <p className="text-center text-2xl font-bold text-green-500 mt-4">You have already performed quiz</p>
             )}
             <p className="text-center text-xl font-bold text-gray-500 mt-4">
               You will be notified by the the email for next quarter

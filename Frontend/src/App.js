@@ -1,15 +1,15 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Quiz from "./components/Quiz";
-import Login from "./components/Login";
-import SignUp from "./components/Signup";
+import Login from "./components/auth/Login";
+import SignUp from "./components/auth/Signup";
 import Key from "./components/key";
-import ProtectedRoute from "./ProtectedRoute";
-import { AuthProvider } from "./AuthContext";
-import FacultyPortal from "./components/facultyPortal";
-import FacultyLogin from "./components/facultyLogin";
-import FacultySignup from "./components/facultySignup";
-import FacultyprotectedRoute from "./FacultyProtectedRoute";
+import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute";
+import { AuthProvider } from "./ProtectedRoutes/AuthContext";
+import FacultyPortal from "./components/Faculty/auth/facultyPortal";
+import FacultyLogin from "./components/Faculty/auth/facultyLogin";
+import FacultySignup from "./components/Faculty/facultySignup";
+import FacultyprotectedRoute from "./ProtectedRoutes/FacultyProtectedRoute";
 
 const App = () => {
   return (

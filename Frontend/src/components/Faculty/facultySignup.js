@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -15,7 +15,8 @@ const SignUp = () => {
     fullName: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    key: "",
+    confirmPassword: "",
   });
 
   const togglePasswordVisibility = () => {
@@ -29,7 +30,7 @@ const SignUp = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -40,7 +41,13 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword ||
+      !formData.key 
+    ) {
       alert("Please fill in all fields before submitting");
       return;
     }
@@ -51,16 +58,23 @@ const SignUp = () => {
       setPasswordMatchError(false);
     }
     if (!validatePassword(formData.password)) {
-      setPasswordError("Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.");
+      setPasswordError(
+        "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character."
+      );
       return;
     } else {
       setPasswordError(null);
     }
     try {
-      const response = await axios.post("http://localhost:5001/signup", formData);
+      const response = await axios.post(
+        "http://localhost:5001/faculty/signup-faculty",
+        formData, {
+            withCredentials: true
+          }
+      );
       console.log("Signup success:", response.data);
       alert("Your account is created successfully");
-      navigate('/login');
+      navigate("/facultylogin");
     } catch (error) {
       console.error("Signup error:", error.response.data);
       setError(error.response.data.message);
@@ -70,6 +84,9 @@ const SignUp = () => {
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-5 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+      <h2 className="mt-10 text-center text-3xl font-bold tracking-tight text-green-600">
+            Welcome to Faculty Portal
+          </h2>
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
           SignUp to create your account
         </h2>
@@ -115,15 +132,17 @@ const SignUp = () => {
             </div>
           </div>
           <div className="mt-4">
-          <h3 className="text-sm font-bold text-gray-900">Password Guidelines:</h3>
-          <ul className="text-sm text-gray-700 list-disc list-inside">
-            <li>At least 8 characters long</li>
-            <li>Include an uppercase letter</li>
-            <li>Include a lowercase letter</li>
-            <li>Include a number</li>
-            <li>Include a special character (@$!%*?&)</li>
-          </ul>
-        </div>
+            <h3 className="text-sm font-bold text-gray-900">
+              Password Guidelines:
+            </h3>
+            <ul className="text-sm text-gray-700 list-disc list-inside">
+              <li>At least 8 characters long</li>
+              <li>Include an uppercase letter</li>
+              <li>Include a lowercase letter</li>
+              <li>Include a number</li>
+              <li>Include a special character (@$!%*?&)</li>
+            </ul>
+          </div>
           <>
             <div className="flex items-center justify-between">
               <label
@@ -188,8 +207,43 @@ const SignUp = () => {
               </button>
             </div>
           </>
-          {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
-          {passwordMatchError && <p className="text-sm text-red-500">Passwords do not match.</p>}
+          <>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="key"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Secret Code
+              </label>
+            </div>
+            <div className="mt-2 relative">
+              <input
+                id="key"
+                name="key"
+                type={show ? "text" : "password"}
+                className="block w-full px-3 border-2 border-gray-500 py-1.5 text-gray-900 sm:text-sm"
+                value={formData.key}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                className="absolute right-0 top-0 mt-3 mr-3"
+                onClick={togglePasswordVisibility}
+              >
+                {!show ? (
+                  <FiEyeOff className="text-green-500" />
+                ) : (
+                  <FiEye className="text-green-500" />
+                )}
+              </button>
+            </div>
+          </>
+          {passwordError && (
+            <p className="text-sm text-red-500">{passwordError}</p>
+          )}
+          {passwordMatchError && (
+            <p className="text-sm text-red-500">Passwords do not match.</p>
+          )}
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div>
             <button
@@ -200,11 +254,11 @@ const SignUp = () => {
             </button>
           </div>
         </form>
-        
+
         <p className="mt-2 text-center text-sm text-gray-500">
           Already have an account?{" "}
           <Link
-            to="/login"
+            to="/facultylogin"
             className="font-semibold leading-6 text-green-500 hover:text-green-500"
           >
             Login

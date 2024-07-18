@@ -20,8 +20,8 @@ const FacultyPortal = () => {
 
   const fetchKey = async () => {
     try {
-      const response = await axios.get('http://localhost:5001/testkey');
-      setCurrentKey(response.data.initialKey);
+      const response = await axios.get('http://localhost:5001/key/testkey');
+      setCurrentKey(response.data.currentKey);
     } catch (error) {
       console.error('Error fetching the key:', error);
     }
@@ -32,7 +32,7 @@ const FacultyPortal = () => {
     console.log(storedFacultyId);
     if (storedFacultyId) {
       try {
-        const response = await axios.post(`http://localhost:5001/faculty`, { id: storedFacultyId }, { withCredentials: true });
+        const response = await axios.post(`http://localhost:5001/faculty/faculty`, { id: parseInt(storedFacultyId) }, { withCredentials: true });
         console.log(response);
         setFaculty(response.data);
       } catch (error) {
